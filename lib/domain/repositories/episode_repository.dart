@@ -1,5 +1,5 @@
 import 'package:drift/drift.dart';
-import 'core/db/app_database.dart';
+import 'package:hayd_kalender/core/db/app_database.dart';
 
 class EpisodeRepository {
   final AppDatabase db;

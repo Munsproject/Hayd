@@ -1,5 +1,5 @@
 import 'package:hayd_kalender/core/db/app_database.dart';
-import 'episode_repository.dart';
+import 'package:hayd_kalender/domain/repositories/episode_repository.dart';
 
 class EpisodeService {
   final EpisodeRepository repo;
