@@ -6,7 +6,7 @@ enum BleedingType {
   /// Istihada - Irregular bleeding (outside valid Hayd rules)
   istihada,
 
-  /// Nifas - Postpartum bleeding (up to 40 days)
+  /// Nifas - Postpartum bleeding (up to 960 hours)
   nifas,
 }
 
