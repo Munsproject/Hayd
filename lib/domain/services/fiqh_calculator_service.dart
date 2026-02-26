@@ -4,6 +4,10 @@ import 'package:hayd_kalender/domain/models/fiqh_ruling.dart';
 
 /// Service to calculate fiqh rulings based on Hanafi madhab
 class FiqhCalculatorService {
+  final DateTime Function() _now;
+
+  FiqhCalculatorService({DateTime Function()? clock})
+      : _now = clock ?? DateTime.now;
 
   /// Determines if a bleeding episode qualifies as valid Hayd
   ///
@@ -16,30 +20,20 @@ class FiqhCalculatorService {
     DateTime? bleedingEnd,
     DateTime? previousHaydEnd,
   }) {
-    final now = DateTime.now();
+    final now = _now();
     final endTime = bleedingEnd ?? now;
     final duration = endTime.difference(bleedingStart);
 
-    // Check minimum duration (72 hours)
     if (duration.inHours < FiqhConstants.haydMinimumHours) {
-      // If bleeding is still active and hasn't reached minimum, it's pending
-      if (bleedingEnd == null) {
-        return false; // Not yet valid, still ongoing
-      }
-      return false; // Ended before minimum - Istihada
+      if (bleedingEnd == null) return false;
+      return false;
     }
 
-    // Check maximum duration (240 hours)
-    if (duration.inHours > FiqhConstants.haydMaximumHours) {
-      return false; // Exceeded maximum - becomes Istihada
-    }
+    if (duration.inHours > FiqhConstants.haydMaximumHours) return false;
 
-    // Check minimum Tuhr (purity) period between Hayds
     if (previousHaydEnd != null) {
       final tuhrDuration = bleedingStart.difference(previousHaydEnd);
-      if (tuhrDuration.inHours < FiqhConstants.tuhrMinimumHours) {
-        return false; // Not enough Tuhr - Istihada
-      }
+      if (tuhrDuration.inHours < FiqhConstants.tuhrMinimumHours) return false;
     }
 
     return true;
@@ -50,52 +44,60 @@ class FiqhCalculatorService {
     required DateTime bleedingStart,
     DateTime? previousHaydEnd,
   }) {
-    final now = DateTime.now();
+    final now = _now();
     final currentDuration = now.difference(bleedingStart);
     final hours = currentDuration.inHours;
 
-    // Check if there was enough Tuhr before this bleeding
     bool sufficientTuhr = true;
     if (previousHaydEnd != null) {
       final tuhrDuration = bleedingStart.difference(previousHaydEnd);
       sufficientTuhr = tuhrDuration.inHours >= FiqhConstants.tuhrMinimumHours;
     }
 
-    // Case 1: Bleeding less than 72 hours
+    // Case 1: Bleeding less than 72 hours — treated as potential Hayd
     if (hours < FiqhConstants.haydMinimumHours) {
-      // Could become Hayd if it continues, but treated as potential Hayd
-      // Conservative ruling: assume Hayd until proven otherwise
       return FiqhRuling(
         bleedingType: BleedingType.hayd,
         purityState: PurityState.inHayd,
         salahProhibited: true,
         fastingProhibited: true,
-        explanation: 'Blødning under 72 timer - behandles som Hayd indtil videre. '
-                    'Hvis det stopper før 72 timer, vil det blive omklassificeret som Istihada.',
+        quranRecitationProhibited: true,
+        duaRecitationAllowed: true,
+        intimacyForbiddenUntilNorm: true,
+        explanation: 'Blødning under 72 timer — behandles som Hayd indtil videre. '
+                    'Koranlæsning er forbudt. Recitation med intention om duʿā er tilladt '
+                    '(fx Āyat ul-Kursī og Quls). '
+                    'Intimitet er forbudt til norm-perioden er udløbet. '
+                    'Hvis blødning stopper før 72 timer omklassificeres til Istihada.',
         stateStartTime: bleedingStart,
         durationHours: hours,
       );
     }
 
-    // Case 2: Bleeding between 72-240 hours with sufficient Tuhr
+    // Case 2: Valid Hayd (72–240 hours, sufficient tuhr)
     if (hours <= FiqhConstants.haydMaximumHours && sufficientTuhr) {
       return FiqhRuling(
         bleedingType: BleedingType.hayd,
         purityState: PurityState.inHayd,
         salahProhibited: true,
         fastingProhibited: true,
-        explanation: 'Valid Hayd (menstruation). Salah og faste er forbudt.',
+        quranRecitationProhibited: true,
+        duaRecitationAllowed: true,
+        intimacyForbiddenUntilNorm: true,
+        explanation: 'Gyldig Hayd (menstruation). Salah skyldes ikke. Faste skyldes. '
+                    'Koranlæsning er forbudt. Recitation med intention om duʿā er tilladt. '
+                    'Intimitet er forbudt til norm-perioden er fuldt udløbet.',
         stateStartTime: bleedingStart,
         durationHours: hours,
       );
     }
 
-    // Case 3: Bleeding exceeds 240 hours OR insufficient Tuhr
+    // Case 3: Istihada — bleeding exceeds 240 hours OR insufficient tuhr
     String reason = '';
     if (hours > FiqhConstants.haydMaximumHours) {
       reason = 'Blødning har overskredet 240 timer (10 dage)';
     } else if (!sufficientTuhr) {
-      reason = 'Ikke nok Tuhr (renhed) siden sidste Hayd';
+      reason = 'Ikke nok tuhr (renhed) siden sidste Hayd';
     }
 
     return FiqhRuling(
@@ -103,8 +105,12 @@ class FiqhCalculatorService {
       purityState: PurityState.inIstihada,
       salahProhibited: false,
       fastingProhibited: false,
-      explanation: 'Istihada (irregular blødning). $reason. '
-                  'Salah er påkrævet med wudu før hver bøn. Faste er gyldigt.',
+      quranRecitationProhibited: false,
+      duaRecitationAllowed: true,
+      intimacyForbiddenUntilNorm: false,
+      explanation: 'Istihada (uregelmæssig blødning). $reason. '
+                  'Salah skyldes — wudu fornyes ved hver bøn. Faste skyldes. '
+                  'Koranlæsning, tawaf og intimitet er tilladt.',
       stateStartTime: bleedingStart,
       durationHours: hours,
     );
@@ -119,14 +125,12 @@ class FiqhCalculatorService {
     final duration = bleedingEnd.difference(bleedingStart);
     final hours = duration.inHours;
 
-    // Check Tuhr requirement
     bool sufficientTuhr = true;
     if (previousHaydEnd != null) {
       final tuhrDuration = bleedingStart.difference(previousHaydEnd);
       sufficientTuhr = tuhrDuration.inHours >= FiqhConstants.tuhrMinimumHours;
     }
 
-    // Determine if it was valid Hayd
     final wasValidHayd = hours >= FiqhConstants.haydMinimumHours &&
                          hours <= FiqhConstants.haydMaximumHours &&
                          sufficientTuhr;
@@ -137,8 +141,11 @@ class FiqhCalculatorService {
         purityState: PurityState.tuhr,
         salahProhibited: false,
         fastingProhibited: false,
+        quranRecitationProhibited: false,
+        duaRecitationAllowed: true,
+        intimacyForbiddenUntilNorm: false,
         explanation: 'Afsluttet Hayd (${hours} timer / ${(hours / 24).toStringAsFixed(1)} dage). '
-                    'Nu i Tuhr - salah og faste er påkrævet.',
+                    'Nu i Tuhr — salah skyldes, faste skyldes.',
         stateStartTime: bleedingEnd,
         durationHours: hours,
       );
@@ -149,7 +156,7 @@ class FiqhCalculatorService {
       } else if (hours > FiqhConstants.haydMaximumHours) {
         reason = 'mere end 240 timer';
       } else if (!sufficientTuhr) {
-        reason = 'utilstrækkelig Tuhr før blødning';
+        reason = 'utilstrækkelig tuhr før blødning';
       }
 
       return FiqhRuling(
@@ -157,8 +164,11 @@ class FiqhCalculatorService {
         purityState: PurityState.tuhr,
         salahProhibited: false,
         fastingProhibited: false,
+        quranRecitationProhibited: false,
+        duaRecitationAllowed: true,
+        intimacyForbiddenUntilNorm: false,
         explanation: 'Afsluttet Istihada ($reason). '
-                    'Nu i Tuhr - salah og faste er påkrævet.',
+                    'Nu i Tuhr — salah skyldes, faste skyldes.',
         stateStartTime: bleedingEnd,
         durationHours: hours,
       );
@@ -169,17 +179,20 @@ class FiqhCalculatorService {
   FiqhRuling getTuhrRuling({
     required DateTime lastBleedingEnd,
   }) {
-    final now = DateTime.now();
+    final now = _now();
     final tuhrDuration = now.difference(lastBleedingEnd);
 
     return FiqhRuling(
-      bleedingType: BleedingType.hayd, // Not actively bleeding, but tracking Hayd
+      bleedingType: BleedingType.hayd,
       purityState: PurityState.tuhr,
       salahProhibited: false,
       fastingProhibited: false,
+      quranRecitationProhibited: false,
+      duaRecitationAllowed: true,
+      intimacyForbiddenUntilNorm: false,
       explanation: 'I Tuhr (renhed) i ${tuhrDuration.inHours} timer '
                   '(${(tuhrDuration.inHours / 24).toStringAsFixed(1)} dage). '
-                  'Salah og faste er påkrævet.',
+                  'Salah og faste skyldes.',
       stateStartTime: lastBleedingEnd,
       durationHours: tuhrDuration.inHours,
     );

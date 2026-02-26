@@ -16,6 +16,13 @@ class FiqhConstants {
   /// Maximum duration for Nifas: 960 hours (40 days)
   static const int nifasMaximumHours = 960;
 
+  // Minimum age for Hayd
+  /// Minimum age for Hayd: 9 Hijri (Islamic calendar) years — Hanafi Madhab
+  static const int haydMinimumAgeHijriYears = 9;
+
+  /// Approximate days equivalent of 9 Hijri years
+  static const int haydMinimumAgeDaysApprox = 3285;
+
   // Helper getters for readability
   static Duration get haydMinimum => Duration(hours: haydMinimumHours);
   static Duration get haydMaximum => Duration(hours: haydMaximumHours);

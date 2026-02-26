@@ -4,8 +4,8 @@ import 'package:hayd_kalender/domain/repositories/episode_repository.dart';
 import 'package:hayd_kalender/domain/services/cycle_analyzer_service.dart';
 import 'package:hayd_kalender/domain/services/fiqh_calculator_service.dart';
 import 'package:hayd_kalender/presentation/widgets/cycle_timeline.dart';
+import 'package:hayd_kalender/presentation/app_theme.dart';
 
-/// Screen to display detailed history of cycles and episodes
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -35,8 +35,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.ivory,
       appBar: AppBar(
-        title: const Text("Historik"),
+        title: const Text('Historik'),
         elevation: 0,
       ),
       body: StreamBuilder<List<Episode>>(
@@ -53,18 +54,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: Padding(
                 padding: EdgeInsets.all(32.0),
                 child: Text(
-                  "Ingen historik endnu.\nStart med at registrere din første blødning.",
+                  'Ingen historik endnu.\nStart med at registrere din første blødning.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                  style: TextStyle(fontSize: 16, color: AppTheme.warmGray),
                 ),
               ),
             );
           }
 
-          // Analyze cycles
           final cycles = analyzer.analyzeCycles(episodes);
-
-          // Calculate statistics
           final avgCycleLength = analyzer.calculateAverageCycleLength(episodes);
           final avgHaydDuration = analyzer.calculateAverageHaydDuration(episodes);
           final nextPrediction = analyzer.predictNextHaydStart(episodes);
@@ -76,72 +74,80 @@ class _HistoryScreenState extends State<HistoryScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Statistics card
-                Card(
-                  elevation: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Statistik",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.plum.withOpacity(0.08),
+                        blurRadius: 12,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Statistik',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.darkPlum,
                         ),
-                        const SizedBox(height: 16),
-
+                      ),
+                      const SizedBox(height: 14),
+                      _StatRow(
+                        icon: Icons.water_drop,
+                        label: 'Totalt antal episoder',
+                        value: episodes.length.toString(),
+                        color: AppTheme.rose,
+                      ),
+                      _StatRow(
+                        icon: Icons.check_circle,
+                        label: 'Gyldige Hayd-cyklusser',
+                        value: validHaydCount.toString(),
+                        color: AppTheme.mint,
+                      ),
+                      if (avgHaydDuration != null)
                         _StatRow(
-                          icon: Icons.water_drop,
-                          label: "Totalt antal episoder",
-                          value: episodes.length.toString(),
+                          icon: Icons.calendar_today,
+                          label: 'Gennemsnitlig Hayd varighed',
+                          value: '${avgHaydDuration.toStringAsFixed(1)} dage',
+                          color: AppTheme.rose,
                         ),
-
+                      if (avgCycleLength != null)
                         _StatRow(
-                          icon: Icons.check_circle,
-                          label: "Valide Hayd cyklusser",
-                          value: validHaydCount.toString(),
+                          icon: Icons.repeat,
+                          label: 'Gennemsnitlig cykluslængde',
+                          value: '${avgCycleLength.toStringAsFixed(1)} dage',
+                          color: AppTheme.plum,
                         ),
-
-                        if (avgHaydDuration != null)
-                          _StatRow(
-                            icon: Icons.calendar_today,
-                            label: "Gennemsnitlig Hayd varighed",
-                            value: "${avgHaydDuration.toStringAsFixed(1)} dage",
-                          ),
-
-                        if (avgCycleLength != null)
-                          _StatRow(
-                            icon: Icons.repeat,
-                            label: "Gennemsnitlig cyklus længde",
-                            value: "${avgCycleLength.toStringAsFixed(1)} dage",
-                          ),
-
-                        if (nextPrediction != null) ...[
-                          const SizedBox(height: 8),
-                          const Divider(),
-                          const SizedBox(height: 8),
-                          _StatRow(
-                            icon: Icons.event,
-                            label: "Forventet næste Hayd",
-                            value: _formatDate(nextPrediction),
-                            valueColor: Colors.blue,
-                          ),
-                        ],
+                      if (nextPrediction != null) ...[
+                        const SizedBox(height: 6),
+                        const Divider(),
+                        const SizedBox(height: 6),
+                        _StatRow(
+                          icon: Icons.event,
+                          label: 'Forventet næste Hayd',
+                          value: _formatDate(nextPrediction),
+                          color: AppTheme.plum,
+                        ),
                       ],
-                    ),
+                    ],
                   ),
                 ),
 
                 const SizedBox(height: 24),
 
-                // Cycle timeline
                 const Text(
-                  "Cyklus Historik",
+                  'Cyklus Historik',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 17,
                     fontWeight: FontWeight.bold,
+                    color: AppTheme.darkPlum,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -156,44 +162,42 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   String _formatDate(DateTime date) {
-    return "${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}";
+    return '${date.day.toString().padLeft(2, '0')}/'
+           '${date.month.toString().padLeft(2, '0')}/'
+           '${date.year}';
   }
 }
 
-/// Widget to display a single statistic row
 class _StatRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color? valueColor;
+  final Color color;
 
   const _StatRow({
     required this.icon,
     required this.label,
     required this.value,
-    this.valueColor,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Icon(icon, size: 20, color: Colors.teal),
-          const SizedBox(width: 12),
+          Icon(icon, size: 18, color: color),
+          const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              label,
-              style: const TextStyle(fontSize: 14),
-            ),
+            child: Text(label, style: const TextStyle(fontSize: 13)),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: valueColor,
+              color: color,
             ),
           ),
         ],

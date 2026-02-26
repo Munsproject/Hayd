@@ -6,6 +6,10 @@ import 'package:hayd_kalender/core/db/app_database.dart';
 import 'package:hayd_kalender/domain/repositories/episode_repository.dart';
 import 'package:hayd_kalender/presentation/widgets/status_card.dart';
 import 'package:hayd_kalender/presentation/history_screen.dart';
+import 'package:hayd_kalender/presentation/calendar_screen.dart';
+import 'package:hayd_kalender/presentation/fiqh_rulings_screen.dart';
+import 'package:hayd_kalender/presentation/debug_test_screen.dart';
+import 'package:hayd_kalender/presentation/app_theme.dart';
 import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,6 +23,10 @@ class _HomeScreenState extends State<HomeScreen> {
   late final AppDatabase db;
   late final EpisodeService service;
   late final FiqhCalculatorService fiqhCalculator;
+
+  // User's norm (habit) — in a full implementation these would be persisted
+  int normHaydDays = 6;
+  int normTuhrDays = 25;
 
   @override
   void initState() {
@@ -42,14 +50,12 @@ class _HomeScreenState extends State<HomeScreen> {
     await service.stopBleeding(DateTime.now());
   }
 
-  /// Calculate current fiqh ruling based on episodes
   Future<FiqhRuling?> _getCurrentRuling(List<Episode> episodes) async {
     if (episodes.isEmpty) return null;
 
     final activeEpisodes = episodes.where((e) => e.end == null).toList();
 
     if (activeEpisodes.isEmpty) {
-      // In Tuhr state
       final lastEpisode = episodes.last;
       if (lastEpisode.end != null) {
         return fiqhCalculator.getTuhrRuling(
@@ -59,7 +65,6 @@ class _HomeScreenState extends State<HomeScreen> {
       return null;
     }
 
-    // Active bleeding
     final current = activeEpisodes.last;
     final previousCompleted = episodes
         .where((e) => e.end != null && e.start.isBefore(current.start))
@@ -86,20 +91,33 @@ class _HomeScreenState extends State<HomeScreen> {
         final current = active.isNotEmpty ? active.last : null;
 
         return Scaffold(
+          backgroundColor: AppTheme.ivory,
           appBar: AppBar(
-            title: const Text("Hayd Kalender"),
+            title: const Text('Hayd Kalender'),
             actions: [
               IconButton(
+                icon: const Icon(Icons.calendar_month_outlined),
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const CalendarScreen())),
+                tooltip: 'Kalender',
+              ),
+              IconButton(
+                icon: const Icon(Icons.info_outline),
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const FiqhRulingsScreen())),
+                tooltip: 'Islamiske regler',
+              ),
+              IconButton(
                 icon: const Icon(Icons.history),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const HistoryScreen(),
-                    ),
-                  );
-                },
-                tooltip: "Se historik",
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const HistoryScreen())),
+                tooltip: 'Se historik',
+              ),
+              IconButton(
+                icon: const Icon(Icons.science_outlined),
+                onPressed: () => Navigator.push(context,
+                  MaterialPageRoute(builder: (_) => const DebugTestScreen())),
+                tooltip: 'Test scenarier',
               ),
             ],
           ),
@@ -114,11 +132,51 @@ class _HomeScreenState extends State<HomeScreen> {
                     return StatusCard(
                       ruling: rulingSnapshot.data,
                       currentBleedingStart: current?.start,
+                      normHaydDays: normHaydDays,
                     );
                   },
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
+
+                // Norm info card
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.lavLight,
+                    borderRadius: BorderRadius.circular(14),
+                    border: const Border(
+                      left: BorderSide(color: AppTheme.lavender, width: 4),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _NormTile(
+                          label: 'Norm Hayd',
+                          value: normHaydDays,
+                          color: AppTheme.rose,
+                        ),
+                      ),
+                      Expanded(
+                        child: _NormTile(
+                          label: 'Norm Tuhr',
+                          value: normTuhrDays,
+                          color: AppTheme.mint,
+                        ),
+                      ),
+                      Expanded(
+                        child: _NormTile(
+                          label: 'Total',
+                          value: normHaydDays + normTuhrDays,
+                          color: AppTheme.plum,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
 
                 // Action buttons
                 Row(
@@ -127,12 +185,15 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ElevatedButton.icon(
                         onPressed: current == null ? startBleeding : null,
                         icon: const Icon(Icons.water_drop),
-                        label: const Text("Jeg har set blod"),
+                        label: const Text('Jeg har set blod'),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.red,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: AppTheme.rose,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey,
+                          disabledBackgroundColor: AppTheme.roseLight,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
@@ -141,37 +202,43 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: ElevatedButton.icon(
                         onPressed: current != null ? stopBleeding : null,
                         icon: const Icon(Icons.stop_circle),
-                        label: const Text("Blodet er stoppet"),
+                        label: const Text('Blodet er stoppet'),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: AppTheme.mint,
                           foregroundColor: Colors.white,
-                          disabledBackgroundColor: Colors.grey,
+                          disabledBackgroundColor: AppTheme.mintLight,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-                // Recent episodes
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "Seneste Episoder",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    'Seneste episoder',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkPlum,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
                 Expanded(
                   child: episodes.isEmpty
                       ? const Center(
                           child: Text(
-                            "Ingen episoder endnu.\nTryk på 'Jeg har set blod' for at starte.",
+                            'Ingen episoder endnu.\nTryk på "Jeg har set blod" for at starte.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                            style: TextStyle(fontSize: 15, color: AppTheme.warmGray),
                           ),
                         )
                       : ListView.builder(
@@ -194,40 +261,45 @@ class _HomeScreenState extends State<HomeScreen> {
                               builder: (context, rulingSnapshot) {
                                 final ruling = rulingSnapshot.data;
                                 final isHayd = ruling?.isValidHayd ?? false;
+                                final typeColor = isHayd ? AppTheme.rose : AppTheme.gold;
 
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(color: typeColor.withOpacity(0.4)),
+                                  ),
                                   child: ListTile(
                                     leading: Icon(
                                       isHayd ? Icons.water_drop : Icons.warning,
-                                      color: isHayd ? Colors.red : Colors.orange,
+                                      color: typeColor,
                                     ),
                                     title: Text(
-                                      "Start: ${formatDate(e.start)}",
-                                      style: const TextStyle(fontSize: 14),
+                                      'Start: ${formatDate(e.start)}',
+                                      style: const TextStyle(fontSize: 13),
                                     ),
                                     subtitle: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           e.end == null
-                                              ? "Aktiv (ikke stoppet endnu)"
-                                              : "Stop: ${formatDate(e.end!)}",
-                                          style: const TextStyle(fontSize: 13),
+                                              ? 'Aktiv (ikke stoppet endnu)'
+                                              : 'Stop: ${formatDate(e.end!)}',
+                                          style: const TextStyle(fontSize: 12),
                                         ),
                                         if (ruling != null)
                                           Text(
-                                            isHayd ? "Hayd" : "Istihada",
+                                            isHayd ? 'Hayd' : 'Istihada',
                                             style: TextStyle(
-                                              fontSize: 12,
+                                              fontSize: 11,
                                               fontWeight: FontWeight.bold,
-                                              color: isHayd ? Colors.red : Colors.orange,
+                                              color: typeColor,
                                             ),
                                           ),
                                       ],
                                     ),
                                     trailing: e.end == null
-                                        ? const Icon(Icons.circle, color: Colors.red, size: 12)
+                                        ? const Icon(Icons.circle, color: AppTheme.rose, size: 10)
                                         : null,
                                   ),
                                 );
@@ -237,27 +309,53 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                 ),
 
-                // View all history button
                 if (episodes.length > 5)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const HistoryScreen(),
-                          ),
-                        );
-                      },
-                      child: const Text("Se alle episoder →"),
-                    ),
+                  TextButton(
+                    onPressed: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const HistoryScreen())),
+                    child: const Text('Se alle episoder →'),
                   ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _NormTile extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+
+  const _NormTile({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          '$value',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppTheme.warmGray,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

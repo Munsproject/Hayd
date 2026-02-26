@@ -6,8 +6,10 @@ import 'package:hayd_kalender/core/enums/bleeding_type.dart';
 /// Service to analyze episodes and create Cycle objects
 class CycleAnalyzerService {
   final FiqhCalculatorService fiqhCalculator;
+  final DateTime Function() _now;
 
-  CycleAnalyzerService(this.fiqhCalculator);
+  CycleAnalyzerService(this.fiqhCalculator, {DateTime Function()? clock})
+      : _now = clock ?? DateTime.now;
 
   /// Analyze all episodes and convert them into Cycle objects
   List<Cycle> analyzeCycles(List<Episode> episodes) {
@@ -26,7 +28,7 @@ class CycleAnalyzerService {
       final previousEpisodeEnd = i > 0 ? sortedEpisodes[i - 1].end : null;
 
       // Calculate bleeding duration
-      final bleedingEnd = episode.end ?? DateTime.now();
+      final bleedingEnd = episode.end ?? _now();
       final bleedingDuration = bleedingEnd.difference(episode.start);
 
       // Determine if it's valid Hayd
