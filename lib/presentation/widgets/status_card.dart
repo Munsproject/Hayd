@@ -9,12 +9,14 @@ class StatusCard extends StatelessWidget {
   final FiqhRuling? ruling;
   final DateTime? currentBleedingStart;
   final int? normHaydDays;
+  final bool isRamadanMode;
 
   const StatusCard({
     super.key,
     this.ruling,
     this.currentBleedingStart,
     this.normHaydDays,
+    this.isRamadanMode = false,
   });
 
   @override
@@ -27,7 +29,7 @@ class StatusCard extends StatelessWidget {
           normHaydDays: normHaydDays,
         ),
         const SizedBox(height: 12),
-        _RulingsGrid(ruling: ruling),
+        _RulingsGrid(ruling: ruling, isRamadanMode: isRamadanMode),
       ],
     );
   }
@@ -128,8 +130,9 @@ class _StatusBanner extends StatelessWidget {
 
 class _RulingsGrid extends StatelessWidget {
   final FiqhRuling? ruling;
+  final bool isRamadanMode;
 
-  const _RulingsGrid({this.ruling});
+  const _RulingsGrid({this.ruling, this.isRamadanMode = false});
 
   bool get _inHayd =>
       ruling?.purityState == PurityState.inHayd ||
@@ -148,12 +151,13 @@ class _RulingsGrid extends StatelessWidget {
         allowed: !(ruling?.salahProhibited ?? false),
         subLabel: _inHayd ? 'skyldes ikke' : 'skyldes',
       ),
-      _RulingItem(
-        icon: Icons.no_food_outlined,
-        label: 'Faste',
-        allowed: !(ruling?.fastingProhibited ?? false),
-        subLabel: _inHayd ? 'skyldes' : 'skyldes ikke',
-      ),
+      if (isRamadanMode)
+        _RulingItem(
+          icon: Icons.no_food_outlined,
+          label: 'Faste',
+          allowed: !(ruling?.fastingProhibited ?? false),
+          subLabel: _inHayd ? 'erstattes' : 'skyldes',
+        ),
       _RulingItem(
         icon: Icons.menu_book_outlined,
         label: 'Koranlæsn.',

@@ -9,6 +9,7 @@ import 'package:hayd_kalender/presentation/history_screen.dart';
 import 'package:hayd_kalender/presentation/calendar_screen.dart';
 import 'package:hayd_kalender/presentation/fiqh_rulings_screen.dart';
 import 'package:hayd_kalender/presentation/debug_test_screen.dart';
+import 'package:hayd_kalender/presentation/ramadan_screen.dart';
 import 'package:hayd_kalender/presentation/app_theme.dart';
 import 'package:intl/intl.dart';
 
@@ -27,6 +28,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // User's norm (habit) — in a full implementation these would be persisted
   int normHaydDays = 6;
   int normTuhrDays = 25;
+
+  // Ramadan mode
+  RamadanSettings _ramadanSettings = RamadanSettings(
+    isEnabled: false,
+    ramadanStart: DateTime.now(),
+    durationDays: 30,
+  );
 
   @override
   void initState() {
@@ -77,6 +85,19 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Future<void> _openRamadan(List<Episode> episodes) async {
+    final result = await Navigator.push<RamadanSettings>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RamadanScreen(
+          settings: _ramadanSettings,
+          episodes: episodes,
+        ),
+      ),
+    );
+    if (result != null) setState(() => _ramadanSettings = result);
+  }
+
   String formatDate(DateTime date) {
     return DateFormat('dd/MM/yyyy HH:mm').format(date);
   }
@@ -114,6 +135,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 tooltip: 'Se historik',
               ),
               IconButton(
+                icon: Icon(
+                  Icons.nights_stay_outlined,
+                  color: _ramadanSettings.isEnabled ? AppTheme.gold : null,
+                ),
+                onPressed: () => _openRamadan(episodes),
+                tooltip: 'Ramadan tilstand',
+              ),
+              IconButton(
                 icon: const Icon(Icons.science_outlined),
                 onPressed: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const DebugTestScreen())),
@@ -133,9 +162,43 @@ class _HomeScreenState extends State<HomeScreen> {
                       ruling: rulingSnapshot.data,
                       currentBleedingStart: current?.start,
                       normHaydDays: normHaydDays,
+                      isRamadanMode: _ramadanSettings.isEnabled,
                     );
                   },
                 ),
+
+                if (_ramadanSettings.isEnabled) ...[
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () => _openRamadan(episodes),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.goldLight,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: AppTheme.gold.withValues(alpha: 0.5)),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(Icons.nights_stay_outlined,
+                              color: AppTheme.gold, size: 16),
+                          SizedBox(width: 8),
+                          Text('Ramadan Tilstand aktiv',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.gold)),
+                          Spacer(),
+                          Text('Se savnede faster →',
+                              style: TextStyle(
+                                  fontSize: 11, color: AppTheme.gold)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
 
                 const SizedBox(height: 16),
 

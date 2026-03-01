@@ -64,7 +64,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
       if (ep.end != null) {
         final next = i < sorted.length - 1 ? sorted[i + 1] : null;
         var t = _dayOnly(ep.end!).add(const Duration(days: 1));
-        final stop = next != null ? _dayOnly(next.start) : _dayOnly(DateTime.now());
+        final stop = next != null
+            ? _dayOnly(next.start)
+            : _dayOnly(DateTime.now());
         while (!t.isAfter(stop)) {
           if (!map.containsKey(_key(t))) map[_key(t)] = 'tuhr';
           t = t.add(const Duration(days: 1));
@@ -75,15 +77,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
   }
 
   DateTime _dayOnly(DateTime d) => DateTime(d.year, d.month, d.day);
-  String _key(DateTime d) => '${d.year}-${d.month.toString().padLeft(2,'0')}-${d.day.toString().padLeft(2,'0')}';
+  String _key(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   Color _dayColor(String? type) {
     switch (type) {
-      case 'hayd':     return AppTheme.rose;
-      case 'istihada': return AppTheme.gold;
-      case 'tuhr':     return AppTheme.mint;
-      case 'pending':  return AppTheme.lavender;
-      default:         return AppTheme.rosePale;
+      case 'hayd':
+        return AppTheme.rose;
+      case 'istihada':
+        return AppTheme.gold;
+      case 'tuhr':
+        return AppTheme.mint;
+      case 'pending':
+        return AppTheme.lavender;
+      default:
+        return AppTheme.rosePale;
     }
   }
 
@@ -91,9 +99,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.ivory,
-      appBar: AppBar(
-        title: const Text('Kalender'),
-      ),
+      appBar: AppBar(title: const Text('Kalender')),
       body: StreamBuilder<List<Episode>>(
         stream: _repo.watchEpisodes(),
         builder: (context, snapshot) {
@@ -105,8 +111,18 @@ class _CalendarScreenState extends State<CalendarScreen> {
           final daysInMonth = DateTime(year, month + 1, 0).day;
           final today = _key(DateTime.now());
           final monthNames = [
-            'Januar','Februar','Marts','April','Maj','Juni',
-            'Juli','August','September','Oktober','November','December',
+            'Januar',
+            'Februar',
+            'Marts',
+            'April',
+            'Maj',
+            'Juni',
+            'Juli',
+            'August',
+            'September',
+            'Oktober',
+            'November',
+            'December',
           ];
 
           return Padding(
@@ -119,21 +135,23 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   children: [
                     IconButton(
                       icon: const Icon(Icons.chevron_left),
-                      onPressed: () => setState(() =>
-                          _viewDate = DateTime(year, month - 1, 1)),
+                      onPressed: () => setState(
+                        () => _viewDate = DateTime(year, month - 1, 1),
+                      ),
                     ),
                     Text(
                       '${monthNames[month - 1]} $year',
                       style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.darkPlum,
+                        color: Color.fromARGB(255, 156, 113, 138),
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.chevron_right),
-                      onPressed: () => setState(() =>
-                          _viewDate = DateTime(year, month + 1, 1)),
+                      onPressed: () => setState(
+                        () => _viewDate = DateTime(year, month + 1, 1),
+                      ),
                     ),
                   ],
                 ),
@@ -142,19 +160,21 @@ class _CalendarScreenState extends State<CalendarScreen> {
 
                 // Weekday headers
                 Row(
-                  children: ['Ma','Ti','On','To','Fr','Lø','Sø']
-                      .map((d) => Expanded(
-                            child: Center(
-                              child: Text(
-                                d,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.plumLight,
-                                ),
+                  children: ['Ma', 'Ti', 'On', 'To', 'Fr', 'Lø', 'Sø']
+                      .map(
+                        (d) => Expanded(
+                          child: Center(
+                            child: Text(
+                              d,
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: Color.fromARGB(255, 244, 182, 216),
                               ),
                             ),
-                          ))
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
 
@@ -163,11 +183,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 // Calendar grid
                 Expanded(
                   child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      mainAxisSpacing: 4,
-                      crossAxisSpacing: 4,
-                    ),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 7,
+                          mainAxisSpacing: 4,
+                          crossAxisSpacing: 4,
+                        ),
                     itemCount: (firstWeekday - 1) + daysInMonth,
                     itemBuilder: (ctx, idx) {
                       if (idx < firstWeekday - 1) return const SizedBox();
@@ -182,14 +203,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           color: _dayColor(type),
                           borderRadius: BorderRadius.circular(8),
                           border: isToday
-                              ? Border.all(color: AppTheme.darkPlum, width: 2)
+                              ? Border.all(
+                                  color: const Color.fromARGB(
+                                    255,
+                                    119,
+                                    80,
+                                    102,
+                                  ),
+                                  width: 2,
+                                )
                               : null,
                           boxShadow: type != null
-                              ? [BoxShadow(
-                                  color: _dayColor(type).withOpacity(0.4),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
-                                )]
+                              ? [
+                                  BoxShadow(
+                                    color: _dayColor(type).withOpacity(0.4),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
                               : null,
                         ),
                         child: Center(
@@ -197,8 +228,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             '$day',
                             style: TextStyle(
                               fontSize: 12,
-                              fontWeight: isToday ? FontWeight.w900 : FontWeight.w500,
-                              color: type != null ? Colors.white : AppTheme.warmGray,
+                              fontWeight: isToday
+                                  ? FontWeight.w900
+                                  : FontWeight.w500,
+                              color: type != null
+                                  ? Colors.white
+                                  : AppTheme.warmGray,
                             ),
                           ),
                         ),
@@ -215,9 +250,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   runSpacing: 6,
                   alignment: WrapAlignment.center,
                   children: const [
-                    _LegendDot(color: AppTheme.rose,     label: 'Hayd'),
-                    _LegendDot(color: AppTheme.gold,     label: 'Istihada'),
-                    _LegendDot(color: AppTheme.mint,     label: 'Tuhr'),
+                    _LegendDot(color: AppTheme.rose, label: 'Hayd'),
+                    _LegendDot(color: AppTheme.gold, label: 'Istihada'),
+                    _LegendDot(color: AppTheme.mint, label: 'Tuhr'),
                     _LegendDot(color: AppTheme.lavender, label: 'Afventer'),
                   ],
                 ),

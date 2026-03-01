@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hayd_kalender/presentation/app_theme.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'presentation/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('da', null);
   runApp(const HaydApp());
 }
 
